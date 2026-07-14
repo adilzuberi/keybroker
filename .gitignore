@@ -1,0 +1,4 @@
+/bin/
+*.sock
+*.jsonl
+.DS_Store

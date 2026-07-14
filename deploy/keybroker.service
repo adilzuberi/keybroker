@@ -1,0 +1,34 @@
+[Unit]
+Description=Keybroker local capability gate
+After=local-fs.target
+
+[Service]
+Type=simple
+User=deploy
+Group=deploy
+ExecStart=/usr/local/bin/keybroker serve
+Environment=KEYBROKER_SOCKET=/run/keybroker/keybroker.sock
+Environment=KEYBROKER_AUDIT_LOG=/var/lib/keybroker/audit.jsonl
+RuntimeDirectory=keybroker
+RuntimeDirectoryMode=0700
+StateDirectory=keybroker
+StateDirectoryMode=0700
+UMask=0077
+Restart=on-failure
+RestartSec=2
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_UNIX
+RestrictSUIDSGID=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+CapabilityBoundingSet=
+ReadWritePaths=/run/keybroker /var/lib/keybroker
+
+[Install]
+WantedBy=multi-user.target
