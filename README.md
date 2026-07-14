@@ -23,6 +23,8 @@ The alpha MVP is running and tested on macOS and Linux:
 
 The socket proves that a caller runs under the service account on its host. It does not yet tell one approved AI harness from another process running as that account. No Keychain, SSH, network or external-write capability exists yet.
 
+For the full problem, architecture, request lifecycle, deployment model and planned read-only SSH use case, read [How Keybroker works](docs/how-keybroker-works.md). The canonical article is [adilzuberi.com/writing/how-keybroker-works](https://adilzuberi.com/writing/how-keybroker-works).
+
 ## Commands
 
 Installed commands:
