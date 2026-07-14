@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"syscall"
+	"time"
 
 	"github.com/adilzuberi/keybroker"
 )
@@ -95,6 +96,18 @@ func run(args []string, stdout, stderr io.Writer, paths runtimePaths) int {
 			return 1
 		}
 		return 0
+	case "wait":
+		if len(args) != 1 {
+			fmt.Fprintln(stderr, "keybroker: wait takes no arguments")
+			return 2
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := waitForService(ctx, paths.socket); err != nil {
+			fmt.Fprintf(stderr, "keybroker: service not ready: %v\n", err)
+			return 1
+		}
+		return 0
 	case "help", "--help", "-h":
 		printUsage(stdout)
 		return 0
@@ -138,6 +151,22 @@ func defaultPaths() runtimePaths {
 	return defaultPathsFor(runtime.GOOS, home, os.Getenv("KEYBROKER_AUDIT_LOG"), os.Getenv("KEYBROKER_SOCKET"))
 }
 
+func waitForService(ctx context.Context, socketPath string) error {
+	for {
+		attempt, cancel := context.WithTimeout(ctx, 100*time.Millisecond)
+		_, err := keybroker.CapabilitiesUnix(attempt, socketPath)
+		cancel()
+		if err == nil {
+			return nil
+		}
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(25 * time.Millisecond):
+		}
+	}
+}
+
 func defaultPathsFor(goos, home, audit, socket string) runtimePaths {
 	if goos == "linux" {
 		if audit == "" {
@@ -158,5 +187,5 @@ func defaultPathsFor(goos, home, audit, socket string) runtimePaths {
 }
 
 func printUsage(output io.Writer) {
-	fmt.Fprintln(output, "usage: keybroker <serve|capabilities|check|invoke> [capability]")
+	fmt.Fprintln(output, "usage: keybroker <serve|wait|capabilities|check|invoke> [capability]")
 }

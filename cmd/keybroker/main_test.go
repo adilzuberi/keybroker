@@ -77,6 +77,17 @@ func TestRuntimeDefaultsPreserveExplicitOverrides(t *testing.T) {
 	}
 }
 
+func TestWaitCommandReturnsWhenServiceIsReady(t *testing.T) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	paths := startTestService(t)
+
+	exitCode := run([]string{"wait"}, &stdout, &stderr, paths)
+	if exitCode != 0 {
+		t.Fatalf("exit code %d, stderr: %s", exitCode, stderr.String())
+	}
+}
+
 func startTestService(t *testing.T) runtimePaths {
 	t.Helper()
 	root, err := os.MkdirTemp("/tmp", "kb-cli-")

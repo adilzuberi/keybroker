@@ -31,6 +31,7 @@ Installed commands:
 keybroker capabilities
 keybroker check system.status
 keybroker invoke system.status
+keybroker wait
 ```
 
 An unknown action returns a policy denial and exit code `3`:

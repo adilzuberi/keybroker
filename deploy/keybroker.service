@@ -7,6 +7,7 @@ Type=simple
 User=deploy
 Group=deploy
 ExecStart=/usr/local/bin/keybroker serve
+ExecStartPost=/usr/local/bin/keybroker wait
 Environment=KEYBROKER_SOCKET=/run/keybroker/keybroker.sock
 Environment=KEYBROKER_AUDIT_LOG=/var/lib/keybroker/audit.jsonl
 RuntimeDirectory=keybroker
