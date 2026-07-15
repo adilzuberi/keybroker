@@ -1,0 +1,4 @@
+interface:
+  display_name: "Keybroker"
+  short_description: "Use private services without exposing secrets"
+  default_prompt: "Use $keybroker to access this service through the narrowest safe capability."
