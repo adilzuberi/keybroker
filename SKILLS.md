@@ -23,6 +23,6 @@ Use the explicit skill name when the harness supports it:
 Use $keybroker to review the failed GitHub workflow. Read only.
 ```
 
-The skill does not grant access by itself. It uses only capabilities exposed by the installed Keybroker service. The current public alpha exposes `system.status`; credential-backed actions remain blocked until per-harness identity and narrow adapters ship.
+The skill does not grant access by itself. It uses only capabilities exposed by the installed Keybroker service. The current public alpha exposes `system.status`; credential-backed actions remain blocked until per-harness identity and narrow adapters ship. Existing scripts that read a credential store directly are not brokered merely because this skill is installed.
 
 The skill and policy reference are released under the repository's Apache-2.0 licence.

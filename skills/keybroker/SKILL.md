@@ -10,7 +10,7 @@ Treat Keybroker as the authority boundary. Ask it for a named action; never ask 
 ## Run the workflow
 
 1. **State the task, not the credential.** Translate the request into the smallest useful action, target and result. Never ask the user to paste a password, token, recovery code, private key, authentication cookie or one-time code into chat.
-2. **Check the live surface.** Prefer an available Keybroker MCP tool. Otherwise run `keybroker capabilities`. Do not assume a documented or planned capability is live. Newer clients may also support `keybroker wait`, but do not require it.
+2. **Check the live surface and custody.** Prefer an available Keybroker MCP tool. Otherwise run `keybroker capabilities`. Confirm that the named adapter—not an older script—owns any credential use. Do not assume a documented or planned capability is live. Newer clients may also support `keybroker wait`, but do not require it.
 3. **Classify the request.** Read [policy.md](references/policy.md). Set the data class, read/write risk, target and model tier before requesting access.
 4. **Choose the narrowest capability.** Bind the request to one service, account, target, method, time window and output shape. Reject generic shells, arbitrary URLs, raw database queries and wildcard access.
 5. **Check before acting.** When using the CLI, run `keybroker check <capability>` before `keybroker invoke <capability>`. With MCP, use the broker's discovery and policy-check tools when exposed.
@@ -32,7 +32,7 @@ Exit code `3` means policy denied the request. Treat denial as final for that in
 
 ## Current implementation boundary
 
-The public alpha currently exposes only `system.status`. It does not yet ship credential-bearing SSH, Keychain, network, financial, health or provider actions. Per-harness identity must exist before such capabilities are enabled.
+The public alpha currently exposes only `system.status`. It does not yet ship credential-bearing SSH, Keychain, network, financial, health or provider actions. Existing skills may still call Apple Keychain or another credential store directly. Do not claim that Keybroker has taken custody of those secrets until the direct read is removed, the broker adapter is live and the live capability list proves it. Per-harness identity must exist before such capabilities are enabled.
 
 Use this live check rather than relying on this note as state may change:
 
