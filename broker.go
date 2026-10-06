@@ -9,6 +9,10 @@ import (
 
 type Risk string
 
+// Values are embedded at release build time, not supplied by the caller.
+var ReleaseID = "development"
+var SourceID = "uncommitted"
+
 const RiskReadOnly Risk = "read-only"
 
 type Capability struct {
@@ -124,8 +128,10 @@ func (b *Broker) Invoke(_ context.Context, request Request) (Result, error) {
 	}
 
 	result.Output = map[string]any{
-		"broker": "keybroker",
-		"status": "ok",
+		"broker":  "keybroker",
+		"status":  "ok",
+		"release": ReleaseID,
+		"source":  SourceID,
 	}
 	return result, nil
 }

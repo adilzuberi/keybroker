@@ -148,3 +148,10 @@ The Forgejo repository is canonical. GitHub receives an automatic one-way push m
 ## Licence
 
 Apache-2.0. See [LICENSE](LICENSE).
+
+## Managed health release preparation
+
+The health-only deployment package is documented in [deploy/managed/README.md](deploy/managed/README.md).
+It adds a distinct managed service and fixed-origin release checks. Provider adapters,
+credentials and existing grants are outside its release scope. Installation and release
+publication require their own owner approval and live verification.

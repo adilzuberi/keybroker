@@ -56,7 +56,7 @@ func TestAllowedStatusInvocationReturnsOnlyBrokerHealth(t *testing.T) {
 	if result.Output["status"] != "ok" {
 		t.Fatalf("got status %#v, want ok", result.Output["status"])
 	}
-	if len(result.Output) != 2 || result.Output["broker"] != "keybroker" {
+	if len(result.Output) != 4 || result.Output["broker"] != "keybroker" || result.Output["release"] != keybroker.ReleaseID || result.Output["source"] != keybroker.SourceID {
 		t.Fatalf("unexpected status output: %#v", result.Output)
 	}
 }

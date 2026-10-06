@@ -42,6 +42,9 @@ func ServeUnix(ctx context.Context, socketPath string, broker *Broker) error {
 	if err := os.MkdirAll(filepath.Dir(socketPath), 0o700); err != nil {
 		return fmt.Errorf("create socket directory: %w", err)
 	}
+	if err := protectedDirectory(filepath.Dir(socketPath)); err != nil {
+		return err
+	}
 	if err := prepareSocketPath(socketPath); err != nil {
 		return err
 	}
@@ -101,6 +104,9 @@ func prepareSocketPath(socketPath string) error {
 
 func handleUnixConnection(ctx context.Context, connection net.Conn, broker *Broker) {
 	defer connection.Close()
+	if !trustedPeer(connection) {
+		return
+	}
 	connection.SetDeadline(time.Now().Add(10 * time.Second))
 
 	decoder := json.NewDecoder(io.LimitReader(connection, maxUnixRequestBytes))
@@ -168,12 +174,18 @@ func CapabilitiesUnix(ctx context.Context, socketPath string) ([]Capability, err
 }
 
 func callUnix(ctx context.Context, socketPath string, message unixRequest) (unixResponse, error) {
+	if err := trustedSocket(socketPath); err != nil {
+		return unixResponse{}, err
+	}
 	dialer := net.Dialer{}
 	connection, err := dialer.DialContext(ctx, "unix", socketPath)
 	if err != nil {
 		return unixResponse{}, fmt.Errorf("connect to keybroker: %w", err)
 	}
 	defer connection.Close()
+	if !trustedPeer(connection) {
+		return unixResponse{}, fmt.Errorf("server peer rejected")
+	}
 
 	if deadline, ok := ctx.Deadline(); ok {
 		connection.SetDeadline(deadline)

@@ -55,12 +55,17 @@ func runMCP(input io.Reader, output io.Writer, socketPath string) error {
 }
 
 func handleMCP(request mcpRequest, socketPath string) map[string]any {
+	if request.Method == "tools/list" || request.Method == "tools/call" {
+		if err := keybroker.CheckManagedRelease(); err != nil {
+			return errorResponse(request.ID, -32000, "Approved Keybroker release unavailable")
+		}
+	}
 	switch request.Method {
 	case "initialize":
 		return resultResponse(request.ID, map[string]any{
 			"protocolVersion": "2025-06-18",
 			"capabilities":    map[string]any{"tools": map[string]any{"listChanged": false}},
-			"serverInfo":      map[string]any{"name": "keybroker", "version": "0.1.0"},
+			"serverInfo":      map[string]any{"name": "keybroker", "version": keybroker.ReleaseID},
 		})
 	case "ping":
 		return resultResponse(request.ID, map[string]any{})
