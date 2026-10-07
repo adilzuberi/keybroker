@@ -13,6 +13,7 @@ import subprocess
 import sys
 import time
 import plistlib
+import stat
 
 # Filled into the immutable bootstrap copy by build.py after preparation.
 BOOTSTRAP_SHA256 = 'UNPREPARED'
@@ -63,6 +64,29 @@ def load_bundle(bundle, expected=BOOTSTRAP_SHA256):
 def write_new(path, data, mode):
     fd=os.open(path,os.O_CREAT|os.O_EXCL|os.O_WRONLY|os.O_NOFOLLOW,mode)
     with os.fdopen(fd,'wb') as f:f.write(data);f.flush();os.fsync(f.fileno())
+
+def protected_directory(path):
+    st=path.lstat()
+    if not stat.S_ISDIR(st.st_mode) or st.st_uid!=0 or st.st_mode&0o022:
+        fail('unprotected parent: '+str(path))
+
+def validate_install_parent(path,goos):
+    ancestor=path.parent
+    while not ancestor.exists():ancestor=ancestor.parent
+    for q in [*reversed(ancestor.parents),ancestor]:
+        st=q.lstat()
+        if stat.S_ISLNK(st.st_mode):
+            # macOS supplies this fixed system alias. Check both its literal
+            # destination and every canonical directory; no other link is allowed.
+            if (goos!='darwin' or q!=Path('/etc') or st.st_uid!=0
+                    or os.readlink(q) not in ('private/etc','/private/etc')):
+                fail('unprotected parent: '+str(q))
+            canonical=q.resolve(strict=True)
+            if canonical!=Path('/private/etc'):fail('unexpected system alias')
+            for parent in [*reversed(canonical.parents),canonical]:
+                protected_directory(parent)
+        else:
+            protected_directory(q)
 
 def stage_and_validate_release(verified,sha,manifest_raw,plat,unit,unit_bytes,goos):
     # systemd verifies ExecStart/ExecStartPost exist. Stage authenticated bytes
@@ -156,11 +180,7 @@ def main():
     if os.geteuid()!=0:fail('--apply requires trusted host administrator')
     # All existing parent paths must be protected. No existing service is replaced.
     for p in paths[:6]:
-        ancestor=p.parent
-        while not ancestor.exists():ancestor=ancestor.parent
-        for q in [*reversed(ancestor.parents),ancestor]:
-            st=q.lstat()
-            if q.is_symlink() or st.st_uid!=0 or st.st_mode&0o022:fail('unprotected parent: '+str(q))
+        validate_install_parent(p,goos)
     ROOT.parent.mkdir(mode=0o755,parents=True,exist_ok=True)
     ROOT.mkdir(mode=0o755);(ROOT/'bootstrap').mkdir(mode=0o755);(ROOT/'state').mkdir(mode=0o700);(ROOT/'releases').mkdir(mode=0o755)
     ACTIVE_UNIT=unit

@@ -5,12 +5,49 @@ from pathlib import Path
 import tempfile
 import subprocess
 import unittest
+import stat
+from types import SimpleNamespace
 from unittest.mock import patch
 
 s=importlib.util.spec_from_file_location('installer',Path(__file__).with_name('install.py'))
 i=importlib.util.module_from_spec(s);s.loader.exec_module(i)
 
 class InstallerTests(unittest.TestCase):
+    def parent_metadata(self,goos='darwin',link='private/etc',changes=None,canonical='/private/etc',target='/etc/sudoers.d/keybroker-health'):
+        metadata={'/etc':(0,stat.S_IFLNK|0o755)}
+        metadata.update(changes or {})
+        def lstat(path):
+            uid,mode=metadata.get(str(path),(0,stat.S_IFDIR|0o755))
+            return SimpleNamespace(st_uid=uid,st_mode=mode)
+        # Every filesystem observation is mocked, including canonical system paths.
+        with patch.object(Path,'exists',return_value=True),patch.object(Path,'lstat',lstat),patch.object(Path,'resolve',return_value=Path(canonical)),patch.object(i.os,'readlink',return_value=link):
+            i.validate_install_parent(Path(target),goos)
+
+    def test_mac_fixed_system_alias_requires_protected_canonical_chain(self):
+        for link in ('private/etc','/private/etc'):
+            with self.subTest(link=link):self.parent_metadata(link=link)
+
+    def test_system_alias_wrong_platform_owner_or_destination_denied(self):
+        cases=[{'goos':'linux'},{'changes':{'/etc':(501,stat.S_IFLNK|0o755)}},
+               {'link':'/tmp/etc'},{'link':'/tmp/indirect-alias','canonical':'/private/etc'},
+               {'canonical':'/tmp/etc'}]
+        for case in cases:
+            with self.subTest(case=case):self.assertRaises(SystemExit,self.parent_metadata,**case)
+
+    def test_system_alias_unprotected_canonical_ancestor_denied(self):
+        for path in ('/','/private','/private/etc','/etc/sudoers.d'):
+            for uid,mode in ((501,stat.S_IFDIR|0o755),(0,stat.S_IFDIR|0o777),(0,stat.S_IFLNK|0o755),(0,stat.S_IFREG|0o755)):
+                with self.subTest(path=path,uid=uid,mode=mode):
+                    self.assertRaises(SystemExit,self.parent_metadata,changes={path:(uid,mode)})
+
+    def test_other_parent_links_remain_denied(self):
+        self.assertRaises(SystemExit,self.parent_metadata,
+                          target='/usr/local/bin/keybroker-health',
+                          changes={'/usr/local':(0,stat.S_IFLNK|0o755)})
+
+    def test_protected_linux_parent_chain_remains_allowed(self):
+        self.parent_metadata(goos='linux',changes={'/etc':(0,stat.S_IFDIR|0o755)})
+
     def fixture(self,d):
         p=Path(d);(p/'release-manager.py').write_bytes(b'reviewed bytes')
         b=json.dumps({'schema':1,'files':{'release-manager.py':i.h(b'reviewed bytes')}}).encode()
